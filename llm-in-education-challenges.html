@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM 在教學上的運用問題與核心挑戰 | 簡報投影片</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(22, 30, 49, 0.75);
+      --bg-card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-indigo: #818cf8;
+      --accent-rose: #fb7185;
+      --accent-amber: #fbbf24;
+      --accent-emerald: #34d399;
+      --accent-purple: #c084fc;
+      --font-sans: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(129, 140, 248, 0.14) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(192, 132, 252, 0.05) 0%, transparent 60%);
+    }
+
+    /* 頂部導航列 */
+    header.deck-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      background: rgba(9, 13, 22, 0.6);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--bg-card-border);
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+    }
+
+    .brand-badge {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--bg-card-border);
+      color: var(--text-muted);
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.85rem;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-icon.active {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* 投影片主容器 (16:9 比例) */
+    .slide-viewport {
+      position: relative;
+      width: min(94vw, 1360px);
+      height: min(84vh, 765px);
+      aspect-ratio: 16 / 9;
+      perspective: 1000px;
+      margin-top: 20px;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 20px;
+      padding: 3.2rem 4rem;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(18px) scale(0.985);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  visibility 0.4s;
+      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5), 
+                  0 0 0 1px rgba(255, 255, 255, 0.05);
+      overflow-y: auto;
+    }
+
+    .slide::-webkit-scrollbar {
+      width: 6px;
+    }
+    .slide::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      z-index: 2;
+    }
+
+    /* 投影片結構元素 */
+    .slide-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 0.8rem;
+      width: fit-content;
+    }
+
+    .tag-cyan { background: rgba(56, 189, 248, 0.12); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.25); }
+    .tag-rose { background: rgba(251, 113, 133, 0.12); color: var(--accent-rose); border: 1px solid rgba(251, 113, 133, 0.25); }
+    .tag-amber { background: rgba(251, 191, 36, 0.12); color: var(--accent-amber); border: 1px solid rgba(251, 191, 36, 0.25); }
+    .tag-indigo { background: rgba(129, 140, 248, 0.12); color: var(--accent-indigo); border: 1px solid rgba(129, 140, 248, 0.25); }
+    .tag-emerald { background: rgba(52, 211, 153, 0.12); color: var(--accent-emerald); border: 1px solid rgba(52, 211, 153, 0.25); }
+
+    .slide-title {
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 0.6rem;
+      background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-subtitle {
+      font-size: 1.12rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* 卡片與格線排版 */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.3rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 14px;
+      padding: 1.6rem;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-3px);
+    }
+
+    .card-icon {
+      font-size: 1.7rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      color: #fff;
+    }
+
+    .card-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* 比較容器 */
+    .compare-box {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1.5rem;
+      align-items: center;
+      margin: 1rem 0;
+    }
+
+    .vs-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+    }
+
+    .highlight-card {
+      padding: 1.7rem;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.8);
+      border-left: 4px solid var(--accent-cyan);
+    }
+
+    .highlight-card.danger {
+      border-left-color: var(--accent-rose);
+      background: rgba(251, 113, 133, 0.04);
+    }
+
+    .highlight-card.success {
+      border-left-color: var(--accent-emerald);
+      background: rgba(52, 211, 153, 0.04);
+    }
+
+    /* 表格樣式 */
+    .deck-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .deck-table th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      padding: 1rem 1.2rem;
+      font-weight: 700;
+      font-size: 0.92rem;
+      text-align: left;
+      border-bottom: 1px solid var(--bg-card-border);
+    }
+
+    .deck-table td {
+      padding: 1rem 1.2rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      line-height: 1.5;
+    }
+
+    .deck-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .deck-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+    }
+
+    /* 引用與金句 */
+    .quote-box {
+      border-left: 4px solid var(--accent-indigo);
+      background: rgba(129, 140, 248, 0.06);
+      padding: 1.5rem 2rem;
+      border-radius: 0 14px 14px 0;
+      margin: 1.5rem 0;
+    }
+
+    .quote-text {
+      font-size: 1.28rem;
+      font-weight: 500;
+      line-height: 1.7;
+      color: #fff;
+    }
+
+    .quote-author {
+      margin-top: 0.8rem;
+      font-size: 0.88rem;
+      color: var(--accent-indigo);
+      font-weight: 600;
+    }
+
+    /* 底部控制列與進度條 */
+    footer.deck-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      background: rgba(9, 13, 22, 0.7);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--bg-card-border);
+      z-index: 100;
+    }
+
+    .progress-bar-container {
+      position: absolute;
+      top: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-indigo));
+      width: 0%;
+      transition: width 0.35s ease;
+    }
+
+    .footer-left, .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    .slide-counter {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* 講者備忘錄抽屜 (Speaker Notes) */
+    .speaker-drawer {
+      position: fixed;
+      bottom: 52px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      width: min(94vw, 1360px);
+      max-height: 220px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--accent-indigo);
+      border-radius: 14px 14px 0 0;
+      padding: 1.2rem 1.8rem;
+      box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.6);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 90;
+      overflow-y: auto;
+    }
+
+    .speaker-drawer.open {
+      transform: translateX(-50%) translateY(0%);
+    }
+
+    .speaker-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.4rem;
+    }
+
+    .speaker-drawer-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-indigo);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .speaker-notes-content {
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    /* 全覽模式 (Overview Modal) */
+    .overview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.92);
+      backdrop-filter: blur(16px);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      padding: 4rem;
+      overflow-y: auto;
+    }
+
+    .overview-overlay.active {
+      display: flex;
+    }
+
+    .overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .thumb-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      cursor: pointer;
+      transition: var(--transition);
+      aspect-ratio: 16 / 9;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .thumb-card:hover, .thumb-card.current {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+      transform: scale(1.02);
+    }
+
+    .thumb-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .thumb-num {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--accent-cyan);
+    }
+
+    /* 快捷鍵說明彈窗 */
+    .shortcuts-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 420px;
+      z-index: 300;
+      display: none;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+
+    .shortcuts-modal.open {
+      display: block;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .shortcut-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9rem;
+    }
+
+    kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--accent-cyan);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部列 -->
+  <header class="deck-header">
+    <div class="brand">
+      <span>LLM Research Wiki</span>
+      <span class="brand-badge">Academic Slide Deck</span>
+    </div>
+    <div class="header-controls">
+      <button class="btn-icon" id="btnOverview" title="所有投影片總覽 (O)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      </button>
+      <button class="btn-icon" id="btnNotes" title="演講者備忘錄 (S)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      </button>
+      <button class="btn-icon" id="btnFullscreen" title="全螢幕模式 (F)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+      </button>
+      <button class="btn-icon" id="btnHelp" title="鍵盤快捷鍵 (?)">
+        <span>?</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 投影片容器 -->
+  <main class="slide-viewport">
+
+    <!-- Slide 1: 封面 -->
+    <section class="slide active" data-notes="本場演講核心要探討：當 LLM 湧入教育現場，我們究竟是獲得了萬能家教，還是正在無形中瓦解深層學習的基礎？">
+      <div class="slide-body" style="text-align: center; align-items: center;">
+        <span class="slide-tag tag-cyan">AI in Education · Academic Synthesis</span>
+        <h1 class="slide-title" style="font-size: 3.2rem; margin: 1.2rem 0;">LLM 在教學上的運用問題<br><span style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">核心挑戰與典範轉移</span></h1>
+        <p class="slide-subtitle" style="max-width: 780px; font-size: 1.25rem;">
+          當機率型文字續寫引擎成為學生的第一導師——效率神話、認知退化與教育本質的重塑
+        </p>
+        <div style="margin-top: 2rem; display: flex; gap: 1.5rem; font-size: 0.95rem; color: var(--text-muted);">
+          <span>📚 來源：LLM Research Wiki</span>
+          <span>•</span>
+          <span>🎯 主題：教學應用綜述</span>
+          <span>•</span>
+          <span>⏳ 建議時間：20-30 mins</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2: 現象破題 -->
+    <section class="slide" data-notes="破題案例：全班的作業與論文平均分高達 95 分，但閉卷考試或現場答辯時，學生卻答不出最基礎的邏輯因果。這就是典型的『虛假理解』。">
+      <span class="slide-tag tag-rose">現象反思 · The Phenomenon</span>
+      <h2 class="slide-title">「繁榮」背後的教育危機</h2>
+      <p class="slide-subtitle">人人都在使用 ChatGPT，但學生真的「學會」了嗎？</p>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="highlight-card danger">
+            <h3 style="color: var(--accent-rose); font-size: 1.3rem; margin-bottom: 0.8rem;">🚨 教室現場的弔詭矛盾</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; font-size: 1.05rem;">
+              作業繳交率 100%、代碼無語法錯誤、申論文辭華麗。<br>
+              然而在<strong>隨堂提問</strong>與<strong>口頭答辯</strong>時，學生卻無法解釋每一行程式碼的架構邏輯。
+            </p>
+          </div>
+          <div class="highlight-card">
+            <h3 style="color: var(--accent-cyan); font-size: 1.3rem; margin-bottom: 0.8rem;">⚠️ 「虛假理解 (Illusion of Competence)」</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; font-size: 1.05rem;">
+              學生誤以為「<strong>看懂 LLM 給出的答案</strong>」就等於「<strong>自己具備解題能力</strong>」。<br>
+              在看似高效的輔助下，實質學習的認知回路被嚴重繞過。
+            </p>
+          </div>
+        </div>
+        <div class="quote-box" style="margin-top: 1.5rem;">
+          <div class="quote-text">「科技最危險的地方，不是它解決不了問題，而是它用完美的答案消滅了思考的過程。」</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: 六大核心痛點全景圖 -->
+    <section class="slide" data-notes="本頁展示六大核心維度，涵蓋了認知、真確性、評量、教學法、社會公平與隱私合規，形成全景結構。">
+      <span class="slide-tag tag-indigo">全景架構 · Systemic Challenges</span>
+      <h2 class="slide-title">LLM 教學運用的六大結構性挑戰</h2>
+      <p class="slide-subtitle">從微觀認知機制到宏觀教育體系的全面衝擊</p>
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon">🧠</div>
+            <div class="card-title" style="color: var(--accent-rose);">1. 認知卸載 (Offloading)</div>
+            <div class="card-desc">繞過思維掙扎，高階批判思考、除錯推理能力萎縮。</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🎭</div>
+            <div class="card-title" style="color: var(--accent-amber);">2. 事實幻覺 (Hallucination)</div>
+            <div class="card-desc">一本正經胡說八道，初學者無法查核，植入錯誤心智模型。</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">📉</div>
+            <div class="card-title" style="color: var(--accent-cyan);">3. 評量機制失效 (Assessment)</div>
+            <div class="card-desc">傳統結果導向作業崩解，AI 偵測器高誤報引發信任破裂。</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">⚖️</div>
+            <div class="card-title" style="color: var(--accent-purple);">4. 數位落差擴大 (Equity)</div>
+            <div class="card-desc">付費旗艦模型 vs. 免費小模型，私人家教資源加速階級分化。</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🧩</div>
+            <div class="card-title" style="color: var(--accent-emerald);">5. 教學法脫節 (Misalignment)</div>
+            <div class="card-desc">LLM「快速直接給答案」的天性與教育「鷹架理論」背道而馳。</div>
+          </div>
+          <div class="card">
+            <div class="card-icon">🔒</div>
+            <div class="card-title" style="color: var(--text-muted);">6. 隱私與倫理 (Safety)</div>
+            <div class="card-desc">學習困難資料遭二度訓練、未成年人心理防護機制薄弱。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: 挑戰一 認知卸載 -->
+    <section class="slide" data-notes="重點強調教育心理學中的『必要難度 (Desirable Difficulty)』。腦神經必須經過卡關、嘗試、失敗，神經突觸才會強化。直接餵答案等於幫學生去健身房跑步。">
+      <span class="slide-tag tag-rose">深層危機 · Cognitive Science</span>
+      <h2 class="slide-title">挑戰一：認知卸載——剝奪「必要難度」</h2>
+      <p class="slide-subtitle">當學習不需要經過卡關與掙扎，大腦就如同不再受力的肌肉</p>
+      <div class="slide-body">
+        <div class="compare-box">
+          <div class="card" style="border-color: rgba(52, 211, 153, 0.4);">
+            <div style="color: var(--accent-emerald); font-weight: 700; margin-bottom: 0.5rem;">🌱 傳統深層學習迴圈</div>
+            <ul style="list-style: none; line-height: 2; font-size: 0.95rem; color: var(--text-muted);">
+              <li>🔹 遭遇難題與邏輯卡關</li>
+              <li>🔹 翻查資料、嘗試錯誤 (Trial & Error)</li>
+              <li>🔹 建立假說並自主除錯</li>
+              <li>👉 <strong>形成穩固的神經元連結與概念心智模型</strong></li>
+            </ul>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="card" style="border-color: rgba(251, 113, 133, 0.4);">
+            <div style="color: var(--accent-rose); font-weight: 700; margin-bottom: 0.5rem;">⚡ LLM 介入後的短路迴圈</div>
+            <ul style="list-style: none; line-height: 2; font-size: 0.95rem; color: var(--text-muted);">
+              <li>🔸 遭遇難題立即複製給 AI</li>
+              <li>🔸 0.5 秒獲得完整解答與代碼</li>
+              <li>🔸 複製貼上，產生「我懂了」的錯覺</li>
+              <li>👉 <strong>關鍵認知挑戰被完全外包，思維停留在淺層</strong></li>
+            </ul>
+          </div>
+        </div>
+        <div class="highlight-card danger" style="margin-top: 1rem;">
+          <strong>教育心理學定律（Bjork, 1994）</strong>：學習必須包含「必要難度（Desirable Difficulty）」。如果學習歷程過於平滑無阻，遺忘速度將成倍加快。
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: 挑戰二 事實幻覺 -->
+    <section class="slide" data-notes="學生常因為 LLM 具備極度自信且流暢的語法，而誤信錯誤的歷史或公式。這在學科啟蒙期最為致命。">
+      <span class="slide-tag tag-amber">可靠性盲區 · Epistemic Risk</span>
+      <h2 class="slide-title">挑戰二：精緻的謊言——事實幻覺與毒害</h2>
+      <p class="slide-subtitle">流暢度（Fluency）不等於真確度（Truthfulness）</p>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title" style="color: var(--accent-amber);">「一本正經胡說八道」的致命傷</h3>
+            <p class="card-desc" style="margin-bottom: 1rem;">
+              LLM 本質是次世代文字機率生成器，並無真正的邏輯概念。它能以權威、自信、完美的文法編造出看似真實的虛假文獻、錯誤物理公式或邏輯謬誤。
+            </p>
+            <div style="background: rgba(0,0,0,0.3); padding: 0.8rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.82rem; color: #fca5a5;">
+              「根據 2021 年李教授發表的論文...」（註：該學者根本不存在）
+            </div>
+          </div>
+          <div class="card">
+            <h3 class="card-title" style="color: var(--accent-cyan);">認知不對等的權力失衡</h3>
+            <div class="card-desc">
+              <p style="margin-bottom: 0.8rem;"><strong>資深專家</strong>：具備先備知識，能一眼看出破綻，把 LLM 當高效草稿機。</p>
+              <p><strong>啟蒙學生</strong>：缺乏背景體系，將模型的話奉為真理。一旦錯誤的第一印象固化為<strong>錯誤心智模型（Misconception）</strong>，後續要花費三倍時間才能糾正。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: 挑戰三 評量體系崩潰 -->
+    <section class="slide" data-notes="探討作業評量失效，以及市面上 AI 偵測器的慘狀——偵測器的高假陽性率把很多無辜學生逼入絕境。">
+      <span class="slide-tag tag-rose">制度危機 · Assessment Breakdown</span>
+      <h2 class="slide-title">挑戰三：評量失效與誠信信任危機</h2>
+      <p class="slide-subtitle">當成果不再代表實力，師生關係淪為捉迷藏</p>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title" style="color: var(--accent-rose);">傳統課後評量的全面瓦解</h3>
+            <ul style="line-height: 1.8; font-size: 0.95rem; color: var(--text-muted); padding-left: 1.2rem;">
+              <li>期末報告、小論文、申論題鑑別度趨近於零。</li>
+              <li>程式編程作業：Leetcodes/作業題已全數被 LLM 記憶。</li>
+              <li>結果：<strong>教師批改的是 AI 寫的文章，並用 AI 來評分，無人真正交流。</strong></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 class="card-title" style="color: var(--accent-amber);">「AI 偵測器」的技術破產</h3>
+            <ul style="line-height: 1.8; font-size: 0.95rem; color: var(--text-muted); padding-left: 1.2rem;">
+              <li>極高的<strong>偽陽性率（False Positive）</strong>，誤傷認真寫作的學生。</li>
+              <li>對<strong>非英語母語者（ESL）</strong>存在嚴重偏誤（寫作語法過於規律即被判定為 AI）。</li>
+              <li>嚴重破壞教育現場最珍貴的「師生互信」基石。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="quote-box" style="margin-top: 1.2rem; border-color: var(--accent-rose);">
+          <div class="quote-text" style="font-size: 1.1rem;">
+            我們必須承認：任何可以被「一鍵生成」並直接繳交的作業，本身就已經失去了教育的意義。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: 挑戰四 教學法脫節 -->
+    <section class="slide" data-notes="LLM 是產品，設計目標是迎合用戶儘快給解答。但老師的目標往往是『不給答案，引導你去思考』。兩者底層邏輯衝突。">
+      <span class="slide-tag tag-purple">教學法衝突 · Pedagogical Mismatch</span>
+      <h2 class="slide-title">挑戰四：商業設計與教學邏輯的根本衝突</h2>
+      <p class="slide-subtitle">LLM 的本性是「討好用戶」，而教育的本質是「促成轉變」</p>
+      <div class="slide-body">
+        <table class="deck-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">維度</th>
+              <th style="width: 37.5%; color: var(--accent-rose);">商業 LLM 的原生預設 (Helpful & Concise)</th>
+              <th style="width: 37.5%; color: var(--accent-emerald);">建構主義教育學 (Constructivism)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>核心任務</strong></td>
+              <td>以最短時間提供最完備的答案，滿足用戶</td>
+              <td>促成學生的認知結構重組與主動建構</td>
+            </tr>
+            <tr>
+              <td><strong>互動模式</strong></td>
+              <td>「有求必應」，直接交付完整代碼與解題步驟</td>
+              <td><strong>鷹架引導 (Scaffolding)</strong>，逐步撤除輔助</td>
+            </tr>
+            <tr>
+              <td><strong>面對錯誤</strong></td>
+              <td>迅速道歉並給予修正後答案</td>
+              <td>引導學生探討「為什麼當初會這樣想？」</td>
+            </tr>
+            <tr>
+              <td><strong>師生角色</strong></td>
+              <td>隨叫隨到的數位僕人</td>
+              <td>具備權威性與同理心的蘇格拉底啟發者</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Slide 8: 挑戰五 數位落差 -->
+    <section class="slide" data-notes="別忽略貧富差距。付得起月費 20 美元的人用的是最強大的邏輯推理模型，沒錢的只能用有時限的舊模型。">
+      <span class="slide-tag tag-cyan">社會公平 · Educational Equity</span>
+      <h2 class="slide-title">挑戰五：智能權力斷層——新時代數位落差</h2>
+      <p class="slide-subtitle">從「擁有電腦的硬體差距」轉向「擁有智力放大器的算力差距」</p>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="highlight-card success">
+            <h3 style="color: var(--accent-emerald); margin-bottom: 0.6rem;">👑 付費階層 (Top Tier)</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; font-size: 0.95rem;">
+              無上限存取最強推理模型（如 o1-preview, Claude 3.5 Sonnet, Gemini Advanced）。<br>
+              享受<strong>長鏈推理、深度除錯、個人化專屬智囊</strong>的高階啟發。
+            </p>
+          </div>
+          <div class="highlight-card danger">
+            <h3 style="color: var(--accent-rose); margin-bottom: 0.6rem;">🏚️ 弱勢階層 (Free Tier)</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; font-size: 0.95rem;">
+              僅能使用額度受限的基礎小模型，幻覺率高、上下文視窗狹窄。<br>
+              在解複雜微積分或編程時，<strong>更容易被低階模型的幻覺帶偏</strong>。
+            </p>
+          </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--bg-card-border); border-radius: 12px; padding: 1.2rem; margin-top: 1.2rem; font-size: 0.95rem; color: var(--text-muted);">
+          📌 <strong>結構性後果</strong>：優勢家庭的學生學得更快、做得更好；缺乏校園統一資源支持的弱勢學生，起跑點被進一步拉大。
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 9: 解法矩陣 -->
+    <section class="slide" data-notes="對策不能只靠禁令。歷史告訴我們禁令只會催生地下使用。必須有系統性的短長期方案。">
+      <span class="slide-tag tag-emerald">系統因應 · Strategic Matrix</span>
+      <h2 class="slide-title">破解之道：短長期解法對比矩陣</h2>
+      <p class="slide-subtitle">拒絕鴕鳥式禁用，擁抱系統性架構轉型</p>
+      <div class="slide-body">
+        <table class="deck-table">
+          <thead>
+            <tr>
+              <th style="width: 22%;">挑戰維度</th>
+              <th style="width: 39%; color: var(--accent-amber);">短期操作解法 (Operational)</th>
+              <th style="width: 39%; color: var(--accent-emerald);">長期典範轉移 (Systemic Paradigm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>認知卸載</strong></td>
+              <td>規範 System Prompt（強制扮演 Socratic Tutor）</td>
+              <td>將評量重塑為<strong>「課堂即席答辯與實作」</strong></td>
+            </tr>
+            <tr>
+              <td><strong>事實幻覺</strong></td>
+              <td>要求作業必須檢附一手文獻查核紀錄</td>
+              <td>採用<strong>校園專用審定 RAG 系統</strong>與教科書庫</td>
+            </tr>
+            <tr>
+              <td><strong>評量失效</strong></td>
+              <td>評估重點改為「Prompt 演進日誌與除錯歷程」</td>
+              <td><strong>歷程導向評量 (Process-Oriented Grading)</strong></td>
+            </tr>
+            <tr>
+              <td><strong>教育不公</strong></td>
+              <td>校方統一採購基礎教育 API 配額</td>
+              <td>部署校園自建開源小模型 (Edge SLMs)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Slide 10: 典範轉移三部曲 -->
+    <section class="slide" data-notes="總結給教育現場的三個關鍵轉向：從管結果到看歷程，從把AI當答案到把AI當辯論對手。">
+      <span class="slide-tag tag-cyan">教育革命 · Three Shifts</span>
+      <h2 class="slide-title">教育者的三項典範轉移</h2>
+      <p class="slide-subtitle">從「圍堵防弊」轉向「重新發明教學模式」</p>
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="card" style="border-top: 3px solid var(--accent-cyan);">
+            <div style="font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 700; margin-bottom: 0.5rem;">SHIFT 01</div>
+            <div class="card-title">從結果導向 ➔ 歷程導向</div>
+            <div class="card-desc">
+              不再評量單一成品（論文/代碼），而是評量學生「如何提問、如何驗證假說、如何識別 AI 盲點」的完整迭代 Log。
+            </div>
+          </div>
+          <div class="card" style="border-top: 3px solid var(--accent-indigo);">
+            <div style="font-family: var(--font-mono); color: var(--accent-indigo); font-weight: 700; margin-bottom: 0.5rem;">SHIFT 02</div>
+            <div class="card-title">從解題工具 ➔ 思想陪練</div>
+            <div class="card-desc">
+              要求學生將 LLM 當成「紅隊辯論對手（Adversary）」或「最挑剔的同儕審查員」，鍛鍊反思與邏輯防禦力。
+            </div>
+          </div>
+          <div class="card" style="border-top: 3px solid var(--accent-purple);">
+            <div style="font-family: var(--font-mono); color: var(--accent-purple); font-weight: 700; margin-bottom: 0.5rem;">SHIFT 03</div>
+            <div class="card-title">從記憶灌輸 ➔ 批判素養</div>
+            <div class="card-desc">
+              核心競爭力不再是「記誦知識的容量」，而是「在海量生成文本中辨別真偽、品味與原創觀點的鑑賞力」。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 11: 結語與提問 -->
+    <section class="slide" data-notes="結語總結全場主旨：我們最終要教出的，不是比 AI 算得更快的機器，而是懂得為什麼要提出這個問題的人。">
+      <div class="slide-body" style="text-align: center; align-items: center;">
+        <span class="slide-tag tag-emerald">結語 · Concluding Vision</span>
+        <h2 class="slide-title" style="font-size: 2.8rem; margin: 1.2rem 0;">「科技負責解答已知，<br>教育負責啟發未知。」</h2>
+        <p class="slide-subtitle" style="max-width: 720px; font-size: 1.2rem; line-height: 1.8;">
+          LLM 不是教育的終點，而是一面明鏡。<br>
+          它照出了傳統灌輸式教學的脆弱，也逼迫我們回歸教育最原始的承諾：<br>
+          <strong>培養一個擁有獨立思考能力與批判靈魂的學習者。</strong>
+        </p>
+        <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+          <button class="nav-btn" style="background: var(--accent-cyan); color: #090d16; font-weight: 700;" onclick="goToSlide(0)">
+            🔄 重新開始簡報
+          </button>
+          <button class="nav-btn" onclick="toggleOverview()">
+            📑 開啟全部投影片總覽
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 演講者備忘錄抽屜 (S) -->
+  <aside class="speaker-drawer" id="speakerDrawer">
+    <div class="speaker-drawer-header">
+      <span class="speaker-drawer-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+        演講者備忘錄 (Speaker Notes)
+      </span>
+      <span style="font-size: 0.75rem; color: var(--text-muted);">按 <kbd>S</kbd> 關閉</span>
+    </div>
+    <div class="speaker-notes-content" id="speakerNotesText">
+      載入中...
+    </div>
+  </aside>
+
+  <!-- 投影片總覽 Overlay (O) -->
+  <div class="overview-overlay" id="overviewOverlay">
+    <div class="overview-header">
+      <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff;">投影片總覽清單</h2>
+      <button class="btn-icon" onclick="toggleOverview()">✕</button>
+    </div>
+    <div class="overview-grid" id="overviewGrid"></div>
+  </div>
+
+  <!-- 快捷鍵幫助彈窗 (?) -->
+  <div class="shortcuts-modal" id="shortcutsModal">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+      <h3 style="color: #fff; font-size: 1.1rem;">鍵盤快捷鍵操作</h3>
+      <button class="btn-icon" style="width: 26px; height: 26px;" onclick="toggleHelp()">✕</button>
+    </div>
+    <div class="shortcut-row"><span>下一張投影片</span><span><kbd>→</kbd> / <kbd>Space</kbd> / <kbd>PageDown</kbd></span></div>
+    <div class="shortcut-row"><span>上一張投影片</span><span><kbd>←</kbd> / <kbd>Backspace</kbd> / <kbd>PageUp</kbd></span></div>
+    <div class="shortcut-row"><span>第一張 / 最後一張</span><span><kbd>Home</kbd> / <kbd>End</kbd></span></div>
+    <div class="shortcut-row"><span>投影片總覽</span><span><kbd>O</kbd></span></div>
+    <div class="shortcut-row"><span>演講者備忘錄</span><span><kbd>S</kbd></span></div>
+    <div class="shortcut-row"><span>切換全螢幕</span><span><kbd>F</kbd></span></div>
+    <div class="shortcut-row"><span>開啟本說明</span><span><kbd>?</kbd></span></div>
+  </div>
+
+  <!-- 底部列 -->
+  <footer class="deck-footer">
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+    <div class="footer-left">
+      <span class="slide-counter" id="slideCounter">01 / 11</span>
+      <span style="opacity: 0.4;">|</span>
+      <span id="currentSlideTitle" style="color: var(--text-muted); font-size: 0.85rem;">封面</span>
+    </div>
+    <div class="footer-right">
+      <button class="nav-btn" id="btnPrev" title="上一張 (Left Arrow)">← 上一張</button>
+      <button class="nav-btn" id="btnNext" title="下一張 (Right Arrow)">下一張 →</button>
+    </div>
+  </footer>
+
+  <script>
+    // 投影片狀態引擎
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const totalSlides = slides.length;
+    let currentIdx = 0;
+
+    const slideCounter = document.getElementById('slideCounter');
+    const currentSlideTitle = document.getElementById('currentSlideTitle');
+    const progressBar = document.getElementById('progressBar');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const speakerDrawer = document.getElementById('speakerDrawer');
+    const speakerNotesText = document.getElementById('speakerNotesText');
+    const overviewOverlay = document.getElementById('overviewOverlay');
+    const overviewGrid = document.getElementById('overviewGrid');
+    const shortcutsModal = document.getElementById('shortcutsModal');
+    const btnNotes = document.getElementById('btnNotes');
+
+    function updateSlide() {
+      slides.forEach((slide, idx) => {
+        if (idx === currentIdx) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      // 更新進度與計數器
+      const progressPercent = ((currentIdx + 1) / totalSlides) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+      slideCounter.textContent = `${String(currentIdx + 1).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+
+      // 提取標題
+      const titleEl = slides[currentIdx].querySelector('.slide-title');
+      currentSlideTitle.textContent = titleEl ? titleEl.textContent.trim().replace(/\s+/g, ' ') : '';
+
+      // 更新備忘錄
+      const notes = slides[currentIdx].getAttribute('data-notes') || '（本頁無備忘錄）';
+      speakerNotesText.textContent = notes;
+
+      // 按鈕狀態
+      btnPrev.disabled = currentIdx === 0;
+      btnNext.disabled = currentIdx === totalSlides - 1;
+
+      // 總覽選中項高亮
+      document.querySelectorAll('.thumb-card').forEach((card, idx) => {
+        card.classList.toggle('current', idx === currentIdx);
+      });
+    }
+
+    function goToSlide(index) {
+      if (index >= 0 && index < totalSlides) {
+        currentIdx = index;
+        updateSlide();
+        if (overviewOverlay.classList.contains('active')) {
+          toggleOverview();
+        }
+      }
+    }
+
+    function nextSlide() {
+      if (currentIdx < totalSlides - 1) {
+        currentIdx++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentIdx > 0) {
+        currentIdx--;
+        updateSlide();
+      }
+    }
+
+    function toggleNotes() {
+      speakerDrawer.classList.toggle('open');
+      btnNotes.classList.toggle('active');
+    }
+
+    function toggleOverview() {
+      const isOpen = overviewOverlay.classList.toggle('active');
+      document.getElementById('btnOverview').classList.toggle('active', isOpen);
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function toggleHelp() {
+      shortcutsModal.classList.toggle('open');
+    }
+
+    // 建構總覽網格
+    function buildOverview() {
+      overviewGrid.innerHTML = '';
+      slides.forEach((slide, idx) => {
+        const titleEl = slide.querySelector('.slide-title');
+        const title = titleEl ? titleEl.textContent.trim() : `Slide ${idx + 1}`;
+        const card = document.createElement('div');
+        card.className = `thumb-card ${idx === currentIdx ? 'current' : ''}`;
+        card.innerHTML = `
+          <div class="thumb-num">SLIDE ${String(idx + 1).padStart(2, '0')}</div>
+          <div class="thumb-title">${title}</div>
+        `;
+        card.onclick = () => goToSlide(idx);
+        overviewGrid.appendChild(card);
+      });
+    }
+
+    // 事件監聽
+    btnNext.addEventListener('click', nextSlide);
+    btnPrev.addEventListener('click', prevSlide);
+    btnNotes.addEventListener('click', toggleNotes);
+    document.getElementById('btnOverview').addEventListener('click', toggleOverview);
+    document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('btnHelp').addEventListener('click', toggleHelp);
+
+    // 鍵盤導航
+    document.addEventListener('keydown', (e) => {
+      if (shortcutsModal.classList.contains('open') && e.key === 'Escape') {
+        toggleHelp();
+        return;
+      }
+      if (overviewOverlay.classList.contains('active') && e.key === 'Escape') {
+        toggleOverview();
+        return;
+      }
+
+      switch (e.key) {
+        case 'ArrowRight':
+        case ' ':
+        case 'PageDown':
+          e.preventDefault();
+          nextSlide();
+          break;
+        case 'ArrowLeft':
+        case 'Backspace':
+        case 'PageUp':
+          e.preventDefault();
+          prevSlide();
+          break;
+        case 'Home':
+          e.preventDefault();
+          goToSlide(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          goToSlide(totalSlides - 1);
+          break;
+        case 's':
+        case 'S':
+          toggleNotes();
+          break;
+        case 'o':
+        case 'O':
+          toggleOverview();
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case '?':
+          toggleHelp();
+          break;
+      }
+    });
+
+    // 初始化
+    buildOverview();
+    updateSlide();
+  </script>
+</body>
+</html>
